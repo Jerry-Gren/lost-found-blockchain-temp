@@ -1,0 +1,11 @@
+{
+  "name": "一把黑色的天堂伞",
+  "description": "在东教一楼楼梯口捡到的，大概8成新",
+  "image": "http://localhost:3001/uploads/1761809699107-82813769.jpg",
+  "attributes": [
+    {
+      "trait_type": "Location",
+      "value": "东校区-教学楼-东一"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "123",
+  "description": "123",
+  "image": "http://localhost:3001/uploads/1761814790541-558225794.jpg",
+  "attributes": [
+    {
+      "trait_type": "Location",
+      "value": "123"
+    }
+  ]
+}
