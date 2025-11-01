@@ -1,52 +1,35 @@
-const express = require('express');
-const { ethers } = require('ethers');
-const Item = require('../models/item');
-const Message = require('../models/message'); // 引入 Message 模型
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-const router = express.Router();
+const messageSchema = new Schema({
+  // 将消息与一个具体的物品（对话）关联起来
+  conversationId: { 
+    type: String, 
+    required: true,
+    index: true // 为这个字段添加索引，以加快查询速度
+  },
+  // 发送者的钱包地址
+  senderAddress: { 
+    type: String, 
+    required: true 
+  },
+  // 接收者的钱包地址
+  receiverAddress: { 
+    type: String, 
+    required: true 
+  },
+  // 消息内容
+  content: { 
+    type: String, 
+    required: true 
+  },
+  // 消息是否已读（用于实现“未读”提示）
+  isRead: { 
+    type: Boolean, 
+    default: false 
+  },
+}, { timestamps: true }); // 自动添加 createdAt 和 updatedAt 字段
 
-// GET /items/:id/messages - 获取特定物品下的所有聊天记录
-router.get('/items/:id/messages', async (req, res) => {
-  const { id: itemId } = req.params;
-  const { userAddress, signature, signatureMessage } = req.query; // 通过查询参数获取签名
+const Message = mongoose.model('Message', messageSchema);
 
-  // --- 安全验证 ---
-  // 1. 检查签名，确保请求者是合法的
-  if (!userAddress || !signature || !signatureMessage) {
-    return res.status(403).json({ message: '缺少身份验证签名' });
-  }
-  let recoveredAddress;
-  try {
-    recoveredAddress = ethers.verifyMessage(signatureMessage, signature);
-  } catch (e) {
-    return res.status(400).json({ message: '签名格式无效' });
-  }
-  if (recoveredAddress.toLowerCase() !== userAddress.toLowerCase()) {
-    return res.status(403).json({ message: '签名验证失败' });
-  }
-
-  // 2. 检查用户是否有权查看该聊天记录
-  try {
-    const item = await Item.findById(itemId);
-    if (!item) {
-      return res.status(404).json({ message: '未找到物品' });
-    }
-    
-    const finder = item.finderAddress.toLowerCase();
-    const appliers = item.claims.map(c => c.applierAddress.toLowerCase());
-
-    // 只有物品的拾取者和所有申请者才有权查看聊天记录
-    if (userAddress.toLowerCase() !== finder && !appliers.includes(userAddress.toLowerCase())) {
-        return res.status(403).json({ message: '你无权查看此对话' });
-    }
-
-    // 3. 验证通过，获取消息
-    const messages = await Message.find({ conversationId: itemId }).sort({ createdAt: 'asc' });
-    res.status(200).json({ message: '成功获取历史消息', data: messages });
-
-  } catch (err) {
-    res.status(500).json({ message: '服务器内部错误', error: err });
-  }
-});
-
-module.exports = router;
+module.exports = Message;
