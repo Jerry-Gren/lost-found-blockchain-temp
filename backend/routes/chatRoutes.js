@@ -5,13 +5,12 @@ const Message = require('../models/message'); // 引入 Message 模型
 
 const router = express.Router();
 
-// GET /items/:id/messages - 获取特定物品下的所有聊天记录
-router.get('/items/:id/messages', async (req, res) => {
+// [!! 修改 !!] GET /items/:id/messages -> POST /items/:id/messages
+router.post('/items/:id/messages', async (req, res) => {
   const { id: itemId } = req.params;
-  const { userAddress, signature, signatureMessage } = req.query; // 通过查询参数获取签名
+  const { userAddress, signature, signatureMessage } = req.body; // [!! 修改 !!] 从 body 获取
 
-  // --- 安全验证 ---
-  // 1. 检查签名，确保请求者是合法的
+  // --- 安全验证 (这部分逻辑不变，已经很完美) ---
   if (!userAddress || !signature || !signatureMessage) {
     return res.status(403).json({ message: '缺少身份验证签名' });
   }
@@ -25,7 +24,6 @@ router.get('/items/:id/messages', async (req, res) => {
     return res.status(403).json({ message: '签名验证失败' });
   }
 
-  // 2. 检查用户是否有权查看该聊天记录
   try {
     const item = await Item.findById(itemId);
     if (!item) {
@@ -35,12 +33,10 @@ router.get('/items/:id/messages', async (req, res) => {
     const finder = item.finderAddress.toLowerCase();
     const appliers = item.claims.map(c => c.applierAddress.toLowerCase());
 
-    // 只有物品的拾取者和所有申请者才有权查看聊天记录
     if (userAddress.toLowerCase() !== finder && !appliers.includes(userAddress.toLowerCase())) {
         return res.status(403).json({ message: '你无权查看此对话' });
     }
 
-    // 3. 验证通过，获取消息
     const messages = await Message.find({ conversationId: itemId }).sort({ createdAt: 'asc' });
     res.status(200).json({ message: '成功获取历史消息', data: messages });
 
